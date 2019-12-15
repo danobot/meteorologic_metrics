@@ -1,3 +1,14 @@
+"""
+Meteologic Metric component for Home Assistant.
+Maintainer:       Daniel Mason
+Version:          v0.0.1
+Documentation:    https://github.com/danobot/meteologic_metrics
+Issues Tracker:   Report issues on Github. Ensure you have the latest version. Include:
+                    * YAML configuration (for the misbehaving entity)
+                    * log entries at time of error and at time of initialisation
+"""
+
+
 from homeassistant.helpers.entity import Entity
 import logging
 import math as m
@@ -24,7 +35,7 @@ class ExampleSensor(Entity):
         self.hass = hass
         self.outdoorTemp = config.get(CONF_TEMP)
         self.outdoorHum = config.get(CONF_HUMIDITY)
-        self.pressure = config.get(CONF_PRESSURE)
+        self.pressureSensor= config.get(CONF_PRESSURE)
         self.dewSensor = config.get(CONF_DEW_POINT)
         self.dew = None
         self.temp_out = None
@@ -100,16 +111,16 @@ class ExampleSensor(Entity):
         try:
             logger.debug("Temp outdoor (raw sensor value): " + str(self.hass.states.get(self.outdoorTemp).state))
             logger.debug("hum outdoor (raw sensor value):  " + str(self.hass.states.get(self.outdoorHum).state))
-            logger.debug("pressure (raw sensor value):     " + str(self.hass.states.get(self.pressure).state))
+            logger.debug("pressure (raw sensor value):     " + str(self.hass.states.get(self.pressureSensor).state))
             self.temp_out = self.toKelvin(float(self.hass.states.get(self.outdoorTemp).state))
             self.hum_out = self.toKelvin(float(self.hass.states.get(self.outdoorHum).state))
-            self.pressure = round(float(self.hass.states.get(self.pressure).state)*100, 2)
+            self.pressure = round(float(self.hass.states.get(self.pressureSensor).state)*100, 2)
 
             logger.debug("Temp outdoor:      " + str(self.temp_out))
             logger.debug("Hum outdoor:       " + str(self.hum_out))
             logger.debug("Pressure (pascal): " + str(self.pressure))
             
-            if self.dew:
+            if self.dewSensor:
 
                 logger.debug("dew (raw sensor value):     " + str(self.hass.states.get(self.dewSensor).state))
                 self.dew = self.toKelvin(float(self.hass.states.get(self.dew).state))
