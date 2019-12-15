@@ -1,5 +1,7 @@
 This component calculates psychrometric states of moist air using ASHRAE 2009 Fundamentals formulations. Atmospheric pressure, and humidity must be given to calculate the other propreties.
 
+![Entity Attributes](entity.png)
+
 The state properties include:
 
 * dry bulb temperature (DBT), 

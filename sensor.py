@@ -123,9 +123,9 @@ class ExampleSensor(Entity):
             if self.dewSensor:
 
                 logger.debug("dew (raw sensor value):     " + str(self.hass.states.get(self.dewSensor).state))
-                self.dew = self.toKelvin(float(self.hass.states.get(self.dew).state))
-                logger.debug("Dew (pascal): " + str(self.dew))
-                self.wetBulbEstimate = self.temp_out - (self.temp_out-self.dew)/3
+                self.dew = self.toKelvin(float(self.hass.states.get(self.dewSensor).state))
+                logger.debug("Dew (C): " + str(self.dew))
+                self.wetBulbEstimate = round(self.temp_out - (self.temp_out-self.dew)/3, 2)
 
 
             S=SI.state("DBT",self.temp_out+273.15,"RH",self.hum_out/100,self.pressure)
