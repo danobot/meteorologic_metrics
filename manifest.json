@@ -1,0 +1,8 @@
+{
+  "domain": "meteologic_metrics",
+  "name": "meteologic_metrics",
+  "documentation": "https://github.com/danobot/meteologic_metrics",
+  "dependencies": [],
+  "codeowners": ["@danobot"],
+  "requirements": ["psypy==0.0.2"]
+}
