@@ -7,18 +7,11 @@ The state properties include:
 * relative humidity (RH), 
 * specific volume (V), 
 * humidity ratio (W), 
-* heat index
 * and wet bulb temperature (WBT)
 * wet bulb temperature (estimate from dewpoint depression)
 * wet bulb temperature (stull formula)
 
-## Heat Index (Feels like temp)
-Attribute name: `heat index`
-
-> The formula below approximates the heat index in degrees Fahrenheit, to within ±1.3 °F (0.7 °C). It is the result of a multivariate fit (temperature equal to or greater than 80 °F (27 °C) and relative humidity equal to or greater than 40%) to a model of the human body. This equation reproduces the above NOAA National Weather Service table (except the values at 90 °F (32 °C) & 45%/70% relative humidity vary unrounded by less than ±1, respectively).
-Source: https://en.wikipedia.org/wiki/Heat_index
-
-## Wet Bulb Temperature Estimations
+## Multiple Wet Bulb Temperature Estimations
 
 ### ASHRAE 2009 Fundamentals Calculation
 

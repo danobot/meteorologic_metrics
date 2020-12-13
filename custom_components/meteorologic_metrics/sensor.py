@@ -13,14 +13,13 @@ from homeassistant.helpers.entity import Entity
 import logging
 import math as m
 from psypy import psySI as SI
+from .helpers import *
 from homeassistant.const import (TEMP_CELSIUS)
 logger = logging.getLogger(__name__)
 
-CONF_TEMP = 'temp'
-CONF_HUMIDITY = 'hum'
-CONF_DEW_POINT = 'dew'
-CONF_PRESSURE = 'pressure'
-CONF_NAME = 'name'
+from .const import *
+
+
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the sensor platform."""
     add_devices([ExampleSensor(hass, config)])
@@ -36,12 +35,17 @@ class ExampleSensor(Entity):
         self.outdoorTemp = config.get(CONF_TEMP)
         self.outdoorHum = config.get(CONF_HUMIDITY)
         self.pressureSensor= config.get(CONF_PRESSURE)
+        
         self.dewSensor = config.get(CONF_DEW_POINT)
-        self.dew = None
-        self.temp_out = None
+        self.dew_temp_k = None
+        self.dew_temp_estimate_c = None
+        self.temp_out_k = None
         self.hum_out = None
         self.pressure = None
-        self.wetBulbEstimate = None
+        self.heat_index = None
+        self.web_bulb_dew = None
+        self.wet_bulb_stull = None
+        self.relative_humidity = None
         self.S = None
         if config.get(CONF_NAME): 
             self._name = config.get(CONF_NAME)
@@ -64,84 +68,158 @@ class ExampleSensor(Entity):
     def unit_of_measurement(self):
         """Return the unit of measurement."""
         return TEMP_CELSIUS
-    def toKelvin(self, celsius):
-        return celsius# + 273.15
+
 
     @property
     def device_state_attributes(self):
-        """Return the state attributes of the sensor."""
-
         attr = {}
-        if self._name:
-            attr['name'] = self._name
-        if self.temp_out: 
-            attr['temperature'] = self.temp_out
+        if self.temp_out_k: 
+            attr['temperature'] = toC(self.temp_out_k)
         if self.hum_out: 
             attr['humidity'] = self.hum_out
-        if self.dew: 
-            attr['dew point'] = self.dew
+        if self.dew_temp_k: 
+            attr['dew point'] = toC (self.dew_temp_k)
+        if self.dew_temp_estimate_c:
+            attr['dew point estimate'] = self.dew_temp_estimate_c
         if self.pressure: 
             attr['pressure (pascals)'] = self.pressure
+        if self.heat_index: 
+            attr['heat index'] = self.heat_index
 
-        if self.wetBulbEstimate:
-            attr["wet bulb temp estimate K"] = round(self.wetBulbEstimate, 2)
-            attr["wet bulb temp estimate C"] = round(self.wetBulbEstimate-273.15, 2)
+        if self.web_bulb_dew:
+            attr["wet bulb temp (dew estimate) C"] = round(toC(self.web_bulb_dew), 2)
+        if self.wet_bulb_stull:
+            attr["wet bulb temp stull estimate C"] = round(self.wet_bulb_stull, 2)
+
         if self.S:
 
             S = self.S
+            self.relative_humidity = S[2]
             attr = {
-                "dry bulb temp C": round(S[0]-273.15, 2),
-                "wet bulb temp C": round(S[5]-273.15, 2),
-                "dry bulb temp K": round(S[0], 2),
-                "wet bulb temp K": round(S[5], 2),
-                "specific enthalpy": round(S[1], 2),
-                "relative humidity": round(S[2], 2),
-                "specific volume": round(S[3], 2),
-                "humidity ratio": round(S[4], 2),
+                "SI dry bulb temp C": round(toC(S[0]), 2),
+                "SI wet bulb temp C": round(toC(S[5]), 2),
+                "SI specific enthalpy": round(S[1], 2),
+                "SI relative humidity": round(S[2], 2),
+                "SI specific volume": round(S[3], 2),
+                "SI humidity ratio": round(S[4], 2)
             }
 
         return attr
 
+    def _outdoor_temp(self):
+        return float(self.hass.states.get(self.outdoorTemp).state)
+
+    def _pressure(self):
+        """ pressure in millibar == hectopascal == pascal / 100 """
+        return float(self.hass.states.get(self.pressureSensor).state)
+
+    def _outdoor_hum(self):
+        return float(self.hass.states.get(self.outdoorHum).state)
+
+    def _dew_temp(self):
+        return float(self.hass.states.get(self.dewSensor).state)
 
     def update(self):
-        """Fetch new state data for the sensor.
-
-        This is the only method that should fetch new data for Home Assistant.
-        """
         try:
-            logger.debug("Temp outdoor (raw sensor value): " + str(self.hass.states.get(self.outdoorTemp).state))
-            logger.debug("hum outdoor (raw sensor value):  " + str(self.hass.states.get(self.outdoorHum).state))
-            logger.debug("pressure (raw sensor value):     " + str(self.hass.states.get(self.pressureSensor).state))
-            self.temp_out = self.toKelvin(float(self.hass.states.get(self.outdoorTemp).state))
-            self.hum_out = self.toKelvin(float(self.hass.states.get(self.outdoorHum).state))
-            self.pressure = round(float(self.hass.states.get(self.pressureSensor).state)*100, 2)
+            self.temp_out_k = toK(self._outdoor_temp())
+            self.hum_out = toK(self._outdoor_hum())
 
-            logger.debug("Temp outdoor:      " + str(self.temp_out))
-            logger.debug("Hum outdoor:       " + str(self.hum_out))
+            self.pressure = self._pressure()*100 # convert hectopascal to pascal
+
+            logger.debug("Temp outdoor (K):      " + str(self.temp_out_k))
+            logger.debug("Hum outdoor (K):       " + str(self.hum_out))
             logger.debug("Pressure (pascal): " + str(self.pressure))
             
             if self.dewSensor:
 
-                logger.debug("dew (raw sensor value):     " + str(self.hass.states.get(self.dewSensor).state))
-                self.dew = self.toKelvin(float(self.hass.states.get(self.dewSensor).state))
-                logger.debug("Dew (C): " + str(self.dew))
-                self.wetBulbEstimate = round(self.temp_out - (self.temp_out-self.dew)/3, 2)
+                self.dew_temp_k = self._dew_temp()
+                logger.debug("dew (raw sensor value):     " + str(self.dew_temp_k))
+                logger.debug("Dew (C): " + str(self.dew_temp_k))
+                self.web_bulb_dew = round(self.temp_out_k - (self.temp_out_k-self.dew_temp_k)/3, 2)
+                logger.debug("Wet bulb dewpoint depression (C): " + str(self.web_bulb_dew))
+            else:
+                alpha = m.log(self.hum_out / 100) + (AA*self.temp_out_k)/(BB+self.temp_out_k)
+                self.dew_temp_estimate_c = toC((BB*alpha) / (AA - alpha))
+                logger.debug("Dew Point Estimate (C): " + str(self.dew_temp_estimate_c))
 
 
-            S=SI.state("DBT",self.temp_out+273.15,"RH",self.hum_out/100,self.pressure)
+            S=SI.state("DBT",self.temp_out_k,"RH",self.hum_out/100,self.pressure)
             self.S = S
+            logger.debug("SI Results ================================ START")
             logger.debug("The dry bulb temperature is "+ str(S[0]))
             logger.debug("The specific enthalpy is "+ str(S[1]))
             logger.debug("The relative humidity is "+ str(S[2]))
             logger.debug("The specific volume is "+ str(S[3]))
             logger.debug("The humidity ratio is "+ str(S[4]))
-            logger.debug("The wet bulb temperature is "+ str(S[5]-273.15))
+            logger.debug("The wet bulb temperature is "+ str(toC(S[5])))
+            logger.debug("SI Results ================================ END")
+            self._state = round(toC(S[5]), 2)
             
-            self._state = round(S[5]-273.15, 2)
+            self.wet_bulb_stull = self.calculate_wb_stull()
+            self.heat_index = self.calculate_heat_index()
+            logger.debug("The wet bulb temperature (Stull formulat)) "+ str(self.wet_bulb_stull))
         except ValueError as e:
             logger.warning("Some input sensor values are still unavailable")
 
         except AttributeError:
             logger.error("Some entity does not exist or is spelled incorrectly. Did its component initialise correctly?")
+        except Exception as e:
+            logger.error(e)
+    @property
+    def available(self):
+        return self._data_available()
+
+    def _data_available(self):
+        d = [
+            self.outdoorHum, self.outdoorTemp, self.pressureSensor, self.dewSensor
+        ]
+       
+        for s in d:
+            if s:
+                state = self.hass.states.get(s)
+                if state is None: 
+                    return False
+                if state.state == 'unknown':
+                    return False
+        return True 
     
 
+    def calculate_heat_index(self, temp_k, hum) -> float:
+        """
+        https://en.wikipedia.org/wiki/Heat_index
+        The formula below approximates the heat index in degrees Fahrenheit, to within ±1.3 °F (0.7 °C). It is the result of a multivariate fit (temperature equal to or greater than 80 °F (27 °C) and relative humidity equal to or greater than 40%) to a model of the human body.[1][13] This equation reproduces the above NOAA National Weather Service table (except the values at 90 °F (32 °C) & 45%/70% relative humidity vary unrounded by less than ±1, respectively).
+        Params: temperature in Kelvin, and humidity as a percentage
+        """
+        if temp_k and hum:
+            T = KtoF(temp_k)
+            H = hum
+
+            c1 = -8.78469475556
+            c2 = 1.61139411
+            c3 = 2.33854883889
+            c4 = -0.14611605
+            c5 = -0.012308094
+            c6 = -0.0164248277778
+            c7 = 0.002211732
+            c8 = 0.00072546
+            c9 = -0.000003582
+
+            
+            hi = c1 + c2*T + c3*R + c4*T*R + c5*m.pow(T, 2) + c6*m.pow(R, 2) + c7*m.pow(T, 2)*R + c8*m.pow(R, 2)*T + c9*m.pow(T, 2)*m.pow(R, 2)
+
+            return FtoC(hi)
+
+        return None
+
+    def calculate_wb_stull(self) -> float:
+        """
+            Although many equations have been created over the years our calculator uses the Stull formula, 
+            which is accurate for relative humidities between 5% and 99% and temperatures between -20°C and 50°C. 
+            It loses its accuracy in situations where both moisture and heat are low in value, but even then the error range is only between -1°C to +0.65°C.
+            Source: https://www.omnicalculator.com/physics/wet-bulb
+        """
+        T = toC(self.temp_out_k)
+        if self.relative_humidity:
+            H = self.relative_humidity
+            return T * m.atan(0.151977 * m.pow(H + 8.313659, 0.5)) + m.atan(T + H) - m.atan(H - 1.676331) + 0.00391838 * m.pow(H, 3/2) * m.atan(0.023101 * H) - 4.686035
+        return None
