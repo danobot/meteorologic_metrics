@@ -18,6 +18,8 @@ Attribute name: `heat index`
 > The formula below approximates the heat index in degrees Fahrenheit, to within ±1.3 °F (0.7 °C). It is the result of a multivariate fit (temperature equal to or greater than 80 °F (27 °C) and relative humidity equal to or greater than 40%) to a model of the human body. This equation reproduces the above NOAA National Weather Service table (except the values at 90 °F (32 °C) & 45%/70% relative humidity vary unrounded by less than ±1, respectively).
 Source: https://en.wikipedia.org/wiki/Heat_index
 
+The heat index represents the apparent temperature (feels like). It will only be calculated for temperatures above 27C and humidty over 40%.
+
 ## Wet Bulb Temperature Estimations
 
 ### ASHRAE 2009 Fundamentals Calculation
