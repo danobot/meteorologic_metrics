@@ -1,16 +1,23 @@
 This component calculates psychrometric states of moist air using ASHRAE 2009 Fundamentals formulations. Atmospheric pressure, and humidity must be given to calculate the other propreties.
 
-The state properties include:
+The entity attributes include:
 
-* dry bulb temperature (DBT), 
-* specific enthalpy (H), 
-* relative humidity (RH), 
-* specific volume (V), 
-* humidity ratio (W), 
+* dry bulb temperature
+* specific enthalpy
+* relative humidity
+* specific volume
+* humidity ratio
 * heat index
-* and wet bulb temperature (WBT)
-* wet bulb temperature (estimate from dewpoint depression)
-* wet bulb temperature (stull formula)
+* dew point (if `dew` sensor not supplied)
+* wet bulb temperature
+* wet bulb temperature (estimation using dewpoint depression)
+* wet bulb temperature (estimation using stull formula)
+
+## Dew Point Calculation
+
+If the `dew` sensor is not supplied, the component calculates an estimate for dew point (°C) using the Magnus-Tetens formula. This produces accurate results (with an uncertainty of 0.35°C) for temperatures ranging from -45°C to 60°C.
+
+Source: https://www.omnicalculator.com/physics/dew-point
 
 ## Heat Index (Feels like temp)
 Attribute name: `heat index`
