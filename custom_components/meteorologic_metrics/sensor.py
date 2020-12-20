@@ -88,13 +88,13 @@ class ClimateMetricsSensor(Entity):
             }
 
         if self.temp_out_k: 
-            attr['temperature'] = toC(self.temp_out_k)
+            attr['temperature'] = round(toC(self.temp_out_k), 2)
         if self.hum_out: 
             attr['humidity'] = self.hum_out
         if self.dew_temp_k: 
             attr['dew point'] = toC (self.dew_temp_k)
         if self.dew_temp_estimate_c:
-            attr['dew point estimate'] = self.dew_temp_estimate_c
+            attr['dew point estimate'] = round(self.dew_temp_estimate_c, 2)
         if self.pressure: 
             attr['pressure (pascals)'] = self.pressure
         if self.heat_index: 
@@ -208,7 +208,7 @@ class ClimateMetricsSensor(Entity):
 
         if temp_k and hum:
             T = KtoF(temp_k)
-            H = hum
+            R = hum
             if T > 80 and H > 40:
                 hi = c1 + c2*T + c3*R + c4*T*R + c5*m.pow(T, 2) + c6*m.pow(R, 2) + c7*m.pow(T, 2)*R + c8*m.pow(R, 2)*T + c9*m.pow(T, 2)*m.pow(R, 2)
                 return FtoC(hi)
@@ -223,6 +223,20 @@ class ClimateMetricsSensor(Entity):
             return dp
         return None
     
+    @property
+    def icon(self):
+        """Return the entity icon."""
+        if self.comfort_level == 0:
+            return "mdi:emoticon-excited-outline"
+        if self.comfort_level == 1:
+            return "mdi:emoticon-outline"
+        if self.comfort_level == 2:
+            return "mdi:emoticon-happy-outline"
+        if self.comfort_level == 3:
+            return "mdi:emoticon-neutral-outline"
+        if self.comfort_level == 4:
+            return "mdi:emoticon-sad-outline"
+        return "mdi:circle-outline"
 
     def determine_comfort(self, dp):
         
