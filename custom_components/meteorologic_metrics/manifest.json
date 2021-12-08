@@ -4,5 +4,6 @@
   "documentation": "https://github.com/danobot/meteorologic_metrics",
   "dependencies": [],
   "codeowners": ["@danobot"],
-  "requirements": ["psypy==0.0.2"]
+  "requirements": ["psypy==0.0.2"],
+  "version": "1.0.0"
 }
