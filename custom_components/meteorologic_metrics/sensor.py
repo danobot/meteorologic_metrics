@@ -34,7 +34,7 @@ class ClimateMetricsSensor(Entity):
         self.outdoorTemp = config.get(CONF_TEMP)
         self.outdoorHum = config.get(CONF_HUMIDITY)
         self.pressureSensor= config.get(CONF_PRESSURE)
-        
+
         self.dewSensor = config.get(CONF_DEW_POINT)
         self.dew_temp_k = None
         self.dew_temp_estimate_c = None
@@ -47,9 +47,9 @@ class ClimateMetricsSensor(Entity):
         self.wet_bulb_stull = None
         self.relative_humidity = None
         self.S = None
-        if config.get(CONF_NAME): 
+        if config.get(CONF_NAME):
             self._name = config.get(CONF_NAME)
-        else: 
+        else:
             self._name = "Meteologic Metrics"
         self._state = None
 
@@ -57,7 +57,7 @@ class ClimateMetricsSensor(Entity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        return self._name 
+        return self._name
 
     @property
     def state(self):
@@ -73,7 +73,7 @@ class ClimateMetricsSensor(Entity):
     @property
     def device_state_attributes(self):
         attr = {}
-        
+
         if self.S:
 
             S = self.S
@@ -87,17 +87,17 @@ class ClimateMetricsSensor(Entity):
                 "SI humidity ratio": round(S[4], 2)
             }
 
-        if self.temp_out_k: 
+        if self.temp_out_k:
             attr['temperature'] = round(toC(self.temp_out_k), 2)
-        if self.hum_out: 
+        if self.hum_out:
             attr['humidity'] = self.hum_out
-        if self.dew_temp_k: 
+        if self.dew_temp_k:
             attr['dew point'] = toC (self.dew_temp_k)
         if self.dew_temp_estimate_c:
             attr['dew point estimate'] = round(self.dew_temp_estimate_c, 2)
-        if self.pressure: 
+        if self.pressure:
             attr['pressure (pascals)'] = self.pressure
-        if self.heat_index: 
+        if self.heat_index:
             attr['heat index'] = self.heat_index
 
         if self.web_bulb_dew:
@@ -138,7 +138,7 @@ class ClimateMetricsSensor(Entity):
             logger.debug("Temp outdoor (K):      " + str(self.temp_out_k))
             logger.debug("Hum outdoor (K):       " + str(self.hum_out))
             logger.debug("Pressure (pascal): " + str(self.pressure))
-            
+
             if self.dewSensor:
 
                 self.dew_temp_k = self._dew_temp()
@@ -150,7 +150,7 @@ class ClimateMetricsSensor(Entity):
             else:
                 self.dew_temp_estimate_c = self.calculate_dewpoint(self.temp_out_k, self.hum_out)
                 self.comfort_level = self.determine_comfort(toC(self.dew_temp_estimate_c))
-               
+
 
             S=SI.state("DBT", self.temp_out_k,"RH", self.hum_out/100, self.pressure)
             self.S = S
@@ -163,7 +163,7 @@ class ClimateMetricsSensor(Entity):
             logger.debug("The wet bulb temperature is "+ str(toC(S[5])))
             logger.debug("SI Results ================================ END")
             self._state = round(toC(S[5]), 2)
-            
+
             self.wet_bulb_stull = self.calculate_wb_stull()
             logger.debug("The wet bulb temperature (Stull formulat)) "+ str(self.wet_bulb_stull))
 
@@ -186,16 +186,16 @@ class ClimateMetricsSensor(Entity):
         d = [
             self.outdoorHum, self.outdoorTemp, self.pressureSensor, self.dewSensor
         ]
-       
+
         for s in d:
             if s:
                 state = self.hass.states.get(s)
-                if state is None: 
+                if state is None:
                     return False
                 if state.state == 'unknown':
                     return False
-        return True 
-    
+        return True
+
 
     def calculate_heat_index(self, temp_k, hum) -> float:
         """
@@ -209,7 +209,7 @@ class ClimateMetricsSensor(Entity):
         if temp_k and hum:
             T = KtoF(temp_k)
             R = hum
-            if T > 80 and H > 40:
+            if T > 80 and R > 40:
                 hi = c1 + c2*T + c3*R + c4*T*R + c5*m.pow(T, 2) + c6*m.pow(R, 2) + c7*m.pow(T, 2)*R + c8*m.pow(R, 2)*T + c9*m.pow(T, 2)*m.pow(R, 2)
                 return FtoC(hi)
 
@@ -222,7 +222,7 @@ class ClimateMetricsSensor(Entity):
             logger.debug("Dew Point Estimate (C): " + str(dp))
             return dp
         return None
-    
+
     @property
     def icon(self):
         """Return the entity icon."""
@@ -239,7 +239,7 @@ class ClimateMetricsSensor(Entity):
         return "mdi:circle-outline"
 
     def determine_comfort(self, dp):
-        
+
         if dp > 21:
             comfort_level = 4
         if dp > 18:
@@ -254,8 +254,8 @@ class ClimateMetricsSensor(Entity):
         return comfort_level
     def calculate_wb_stull(self) -> float:
         """
-            Although many equations have been created over the years our calculator uses the Stull formula, 
-            which is accurate for relative humidities between 5% and 99% and temperatures between -20°C and 50°C. 
+            Although many equations have been created over the years our calculator uses the Stull formula,
+            which is accurate for relative humidities between 5% and 99% and temperatures between -20°C and 50°C.
             It loses its accuracy in situations where both moisture and heat are low in value, but even then the error range is only between -1°C to +0.65°C.
             Source: https://www.omnicalculator.com/physics/wet-bulb
         """
