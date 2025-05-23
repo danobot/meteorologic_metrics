@@ -13,7 +13,7 @@ import logging
 import math as m
 from psypy import psySI as SI
 from .helpers import *
-from homeassistant.const import (TEMP_CELSIUS)
+from homeassistant.const import UnitOfTemperature
 logger = logging.getLogger(__name__)
 
 from .const import *
@@ -67,7 +67,7 @@ class ClimateMetricsSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
 
     @property
